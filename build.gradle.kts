@@ -50,23 +50,23 @@ repositories {
 // I do not quite understand why some dependencies break that way and some don't. I noticed that SNAPSHOT dependencies
 // seem to break all the time, it may be because Gradle does not cache them somewhere.
 //
-buildscript {
-    // https://docs.gradle.org/current/userguide/dependency_locking.html
-    dependencyLocking {
-        lockAllConfigurations()
-        lockFile = file("gradle/locks/root/gradle-buildscript.lockfile")
-        lockMode.set(LockMode.DEFAULT)
-        //ignoredDependencies.add()
-    }
-}
-
-// https://docs.gradle.org/current/userguide/dependency_locking.html
-dependencyLocking {
-    lockAllConfigurations()
-    // There seems to be no way to customize the location of settings-gradle.lockfile
-    lockFile = file("gradle/locks/root/gradle.lockfile")
-    lockMode.set(LockMode.DEFAULT)
-}
+//buildscript {
+//    // https://docs.gradle.org/current/userguide/dependency_locking.html
+//    dependencyLocking {
+//        lockAllConfigurations()
+//        lockFile = file("gradle/locks/root/gradle-buildscript.lockfile")
+//        lockMode.set(LockMode.DEFAULT)
+//        //ignoredDependencies.add()
+//    }
+//}
+//
+//// https://docs.gradle.org/current/userguide/dependency_locking.html
+//dependencyLocking {
+//    lockAllConfigurations()
+//    // There seems to be no way to customize the location of settings-gradle.lockfile
+//    lockFile = file("gradle/locks/root/gradle.lockfile")
+//    lockMode.set(LockMode.DEFAULT)
+//}
 
 // Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {

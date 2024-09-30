@@ -29,16 +29,79 @@ repositories {
     }
 }
 
+// To reproduce the problem run:
+//
+// ./gradlew --write-locks clean build
+//
+// this will generate a bunch of lock files, with strict rules on our all dependencies, including transitive.
+//
+// ./gradlew build
+//
+// It will complain that a bunch (looks somewhat random, but probably is not) dependencies changed, because
+// now they have a different +number hash ending, which changed.
+//
+// I think it happens, probably, because the way gradle dependency locking works: is that it simply adds to the project
+// all those strict dependencies from the lock files to the project and lets dependency conflict resolution do the work
+// https://docs.gradle.org/current/userguide/dependency_constraints_conflicts.html#resolving_version_conflicts
+// Or not, it a guess. But if so, it means, that we will probably have two platform dependencies, which
+// cases ExtractorTransformer to run again, creating new plugin dependencies, with new hashes, which makes dependency
+// conflict resolution impossible.
+//
+// I do not quite understand why some dependencies break that way and some don't. I noticed that SNAPSHOT dependencies
+// seem to break all the time, it may be because Gradle does not cache them somewhere.
+//
+buildscript {
+    // https://docs.gradle.org/current/userguide/dependency_locking.html
+    dependencyLocking {
+        lockAllConfigurations()
+        lockFile = file("gradle/locks/root/gradle-buildscript.lockfile")
+        lockMode.set(LockMode.DEFAULT)
+        //ignoredDependencies.add()
+    }
+}
+
+// https://docs.gradle.org/current/userguide/dependency_locking.html
+dependencyLocking {
+    lockAllConfigurations()
+    // There seems to be no way to customize the location of settings-gradle.lockfile
+    lockFile = file("gradle/locks/root/gradle.lockfile")
+    lockMode.set(LockMode.DEFAULT)
+}
+
 // Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
     testImplementation(libs.junit)
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
-        create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
+        create(
+            providers.gradleProperty("platformType"),
+            providers.gradleProperty("platformVersion"),
+            false
+        )
 
         // Plugin Dependencies. Uses `platformBundledPlugins` property from the gradle.properties file for bundled IntelliJ Platform plugins.
         bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',') })
+
+        // This is important for bug reproduction because we need some dependencies in the test
+        bundledPlugins(
+            "com.intellij.database",
+            "com.intellij.copyright",
+            "com.intellij.java",
+            "com.intellij.spring",
+            "com.intellij.diagram",
+            "com.intellij.javaee",
+            "com.intellij.gradle",
+            "com.intellij.properties",
+            "org.intellij.groovy",
+            "com.intellij.java-i18n",
+            "com.intellij.css",
+            "com.intellij.persistence",
+            "Tomcat",
+            "JUnit",
+            "org.jetbrains.idea.maven",
+            "org.jetbrains.idea.eclipse"
+        )
 
         // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
         plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
